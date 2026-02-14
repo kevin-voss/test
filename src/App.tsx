@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react"
-import { Todo, Filter } from "@/types/todo"
+import { Todo, Filter, SortOption, Priority } from "@/types/todo"
 import { TodoForm } from "@/components/TodoForm"
 import { TodoList } from "@/components/TodoList"
 import { FilterBar } from "@/components/FilterBar"
@@ -7,15 +7,37 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 const STORAGE_KEY = "react-todo-todos"
 
+const PRIORITY_ORDER: Record<Priority, number> = {
+  low: 0,
+  medium: 1,
+  high: 2,
+  urgent: 3,
+}
+
+function migrateTodo(t: Record<string, unknown>): Todo {
+  const createdAt = t.createdAt
+    ? new Date(t.createdAt as string)
+    : new Date()
+  const priority = (t.priority as Priority) ?? "medium"
+  const tags = Array.isArray(t.tags) ? (t.tags as string[]) : []
+  const dueDate = t.dueDate ? new Date(t.dueDate as string) : null
+  return {
+    id: t.id as string,
+    text: t.text as string,
+    completed: Boolean(t.completed),
+    createdAt,
+    priority,
+    tags,
+    dueDate,
+  }
+}
+
 function loadTodos(): Todo[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return []
-    const parsed = JSON.parse(raw)
-    return parsed.map((t: { id: string; text: string; completed: boolean; createdAt: string }) => ({
-      ...t,
-      createdAt: new Date(t.createdAt),
-    }))
+    const parsed = JSON.parse(raw) as Record<string, unknown>[]
+    return parsed.map(migrateTodo)
   } catch {
     return []
   }
@@ -28,28 +50,86 @@ function saveTodos(todos: Todo[]) {
 export default function App() {
   const [todos, setTodos] = useState<Todo[]>(loadTodos)
   const [filter, setFilter] = useState<Filter>("all")
+  const [sort, setSort] = useState<SortOption>("created-desc")
+  const [filterPriority, setFilterPriority] = useState<Priority | "all">("all")
+  const [filterTag, setFilterTag] = useState<string>("")
 
   useEffect(() => {
     saveTodos(todos)
   }, [todos])
 
-  const filteredTodos = useMemo(() => {
+  const availableTags = useMemo(() => {
+    const set = new Set<string>()
+    todos.forEach((t) => t.tags.forEach((tag) => set.add(tag)))
+    return Array.from(set).sort()
+  }, [todos])
+
+  const filteredAndSortedTodos = useMemo(() => {
+    let result = todos
+
     switch (filter) {
       case "active":
-        return todos.filter((t) => !t.completed)
+        result = result.filter((t) => !t.completed)
+        break
       case "completed":
-        return todos.filter((t) => t.completed)
-      default:
-        return todos
+        result = result.filter((t) => t.completed)
+        break
     }
-  }, [todos, filter])
 
-  const handleAdd = (text: string) => {
+    if (filterPriority !== "all") {
+      result = result.filter((t) => t.priority === filterPriority)
+    }
+
+    if (filterTag) {
+      result = result.filter((t) => t.tags.includes(filterTag))
+    }
+
+    result = [...result].sort((a, b) => {
+      switch (sort) {
+        case "created-asc":
+          return a.createdAt.getTime() - b.createdAt.getTime()
+        case "created-desc":
+          return b.createdAt.getTime() - a.createdAt.getTime()
+        case "priority-desc":
+          return PRIORITY_ORDER[b.priority] - PRIORITY_ORDER[a.priority]
+        case "priority-asc":
+          return PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]
+        case "due-asc": {
+          const aTime = a.dueDate?.getTime() ?? Infinity
+          const bTime = b.dueDate?.getTime() ?? Infinity
+          return aTime - bTime
+        }
+        case "due-desc": {
+          const aTime = a.dueDate?.getTime() ?? -Infinity
+          const bTime = b.dueDate?.getTime() ?? -Infinity
+          return bTime - aTime
+        }
+        case "text-asc":
+          return a.text.localeCompare(b.text)
+        case "text-desc":
+          return b.text.localeCompare(a.text)
+        default:
+          return 0
+      }
+    })
+
+    return result
+  }, [todos, filter, sort, filterPriority, filterTag])
+
+  const handleAdd = (
+    text: string,
+    priority: Priority,
+    tags: string[],
+    dueDate: Date | null
+  ) => {
     const todo: Todo = {
       id: crypto.randomUUID(),
       text,
       completed: false,
       createdAt: new Date(),
+      priority,
+      tags,
+      dueDate,
     }
     setTodos((prev) => [...prev, todo])
   }
@@ -73,9 +153,19 @@ export default function App() {
           </CardHeader>
           <CardContent className="space-y-6">
             <TodoForm onAdd={handleAdd} />
-            <FilterBar filter={filter} onFilterChange={setFilter} />
+            <FilterBar
+              filter={filter}
+              onFilterChange={setFilter}
+              sort={sort}
+              onSortChange={setSort}
+              filterPriority={filterPriority}
+              onFilterPriorityChange={setFilterPriority}
+              filterTag={filterTag}
+              onFilterTagChange={setFilterTag}
+              availableTags={availableTags}
+            />
             <TodoList
-              todos={filteredTodos}
+              todos={filteredAndSortedTodos}
               onToggle={handleToggle}
               onDelete={handleDelete}
             />
