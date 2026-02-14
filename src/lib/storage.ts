@@ -1,4 +1,5 @@
 import { Todo, TodoListMeta } from "@/types/todo"
+import { ShoppingItem } from "@/types/shopping"
 
 const STORAGE_KEY = "react-todo-data"
 const LEGACY_STORAGE_KEY = "react-todo-todos"
@@ -6,6 +7,7 @@ const LEGACY_STORAGE_KEY = "react-todo-todos"
 export interface StoredData {
   lists: TodoListMeta[]
   todosByListId: Record<string, Todo[]>
+  shoppingItems: ShoppingItem[]
 }
 
 function migrateTodo(t: Record<string, unknown>): Todo {
@@ -34,6 +36,17 @@ function migrateListMeta(l: Record<string, unknown>): TodoListMeta {
   }
 }
 
+function migrateShoppingItem(s: Record<string, unknown>): ShoppingItem {
+  const category = (s.category as ShoppingItem["category"]) ?? "sonstiges"
+  return {
+    id: s.id as string,
+    text: s.text as string,
+    completed: Boolean(s.completed),
+    createdAt: s.createdAt ? new Date(s.createdAt as string) : new Date(),
+    category: category,
+  }
+}
+
 function loadLegacyTodos(): Todo[] | null {
   try {
     const raw = localStorage.getItem(LEGACY_STORAGE_KEY)
@@ -52,13 +65,18 @@ export function loadData(): StoredData {
       const parsed = JSON.parse(raw) as {
         lists: Record<string, unknown>[]
         todosByListId: Record<string, Record<string, unknown>[]>
+        shoppingItems?: Record<string, unknown>[]
       }
       const lists = (parsed.lists ?? []).map(migrateListMeta)
       const todosByListId: Record<string, Todo[]> = {}
       for (const [listId, todos] of Object.entries(parsed.todosByListId ?? {})) {
         todosByListId[listId] = (todos ?? []).map(migrateTodo)
       }
-      return { lists, todosByListId }
+      const rawItems = parsed.shoppingItems ?? []
+      const shoppingItems = Array.isArray(rawItems)
+        ? rawItems.map((s) => migrateShoppingItem(s as Record<string, unknown>))
+        : []
+      return { lists, todosByListId, shoppingItems }
     }
   } catch {
     // fall through to migration or default
@@ -74,10 +92,11 @@ export function loadData(): StoredData {
     return {
       lists: [defaultList],
       todosByListId: { [defaultList.id]: legacyTodos },
+      shoppingItems: [],
     }
   }
 
-  return { lists: [], todosByListId: {} }
+  return { lists: [], todosByListId: {}, shoppingItems: [] }
 }
 
 export function saveData(data: StoredData): void {

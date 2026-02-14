@@ -6,6 +6,7 @@ import {
   useCallback,
 } from "react"
 import { Todo, TodoListMeta } from "@/types/todo"
+import { ShoppingItem, ShoppingCategory } from "@/types/shopping"
 import { loadData, saveData, StoredData } from "@/lib/storage"
 
 interface TodoListsContextValue {
@@ -19,6 +20,11 @@ interface TodoListsContextValue {
   toggleTodo: (listId: string, todoId: string) => void
   deleteTodo: (listId: string, todoId: string) => void
   updateTodos: (listId: string, todos: Todo[]) => void
+  // Shopping list (always available)
+  getShoppingItems: () => ShoppingItem[]
+  addShoppingItem: (text: string, category: ShoppingCategory) => void
+  toggleShoppingItem: (id: string) => void
+  deleteShoppingItem: (id: string) => void
 }
 
 const TodoListsContext = createContext<TodoListsContextValue | null>(null)
@@ -38,6 +44,7 @@ export function TodoListsProvider({ children }: { children: React.ReactNode }) {
       createdAt: new Date(),
     }
     setData((prev) => ({
+      ...prev,
       lists: [...prev.lists, meta],
       todosByListId: { ...prev.todosByListId, [id]: [] },
     }))
@@ -48,6 +55,7 @@ export function TodoListsProvider({ children }: { children: React.ReactNode }) {
     setData((prev) => {
       const { [id]: _, ...rest } = prev.todosByListId
       return {
+        ...prev,
         lists: prev.lists.filter((l) => l.id !== id),
         todosByListId: rest,
       }
@@ -121,6 +129,41 @@ export function TodoListsProvider({ children }: { children: React.ReactNode }) {
     }))
   }, [])
 
+  const getShoppingItems = useCallback(
+    () => data.shoppingItems ?? [],
+    [data.shoppingItems]
+  )
+
+  const addShoppingItem = useCallback((text: string, category: ShoppingCategory) => {
+    const newItem: ShoppingItem = {
+      id: crypto.randomUUID(),
+      text: text.trim() || "Item",
+      completed: false,
+      createdAt: new Date(),
+      category,
+    }
+    setData((prev) => ({
+      ...prev,
+      shoppingItems: [...(prev.shoppingItems ?? []), newItem],
+    }))
+  }, [])
+
+  const toggleShoppingItem = useCallback((id: string) => {
+    setData((prev) => ({
+      ...prev,
+      shoppingItems: (prev.shoppingItems ?? []).map((item) =>
+        item.id === id ? { ...item, completed: !item.completed } : item
+      ),
+    }))
+  }, [])
+
+  const deleteShoppingItem = useCallback((id: string) => {
+    setData((prev) => ({
+      ...prev,
+      shoppingItems: (prev.shoppingItems ?? []).filter((item) => item.id !== id),
+    }))
+  }, [])
+
   const value: TodoListsContextValue = {
     lists: data.lists,
     todosByListId: data.todosByListId,
@@ -132,6 +175,10 @@ export function TodoListsProvider({ children }: { children: React.ReactNode }) {
     toggleTodo,
     deleteTodo,
     updateTodos,
+    getShoppingItems,
+    addShoppingItem,
+    toggleShoppingItem,
+    deleteShoppingItem,
   }
 
   return (

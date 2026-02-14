@@ -4,13 +4,15 @@ import { useTodoLists } from "@/contexts/TodoListsContext"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Plus, ListTodo, Trash2 } from "lucide-react"
+import { Plus, ListTodo, Trash2, ShoppingCart } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export function Dashboard() {
-  const { lists, addList, deleteList } = useTodoLists()
+  const { lists, addList, deleteList, getShoppingItems } = useTodoLists()
   const [newListName, setNewListName] = useState("")
   const [isAdding, setIsAdding] = useState(false)
+  const shoppingItems = getShoppingItems()
+  const shoppingCount = shoppingItems.filter((i) => !i.completed).length
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault()
@@ -24,7 +26,30 @@ export function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-12 px-4">
-      <div className="mx-auto max-w-2xl">
+      <div className="mx-auto max-w-2xl space-y-6">
+        <Link to="/shopping">
+          <Card className="border-emerald-200/60 bg-gradient-to-r from-emerald-50/80 to-white hover:from-emerald-50 hover:to-emerald-50/50 transition-colors cursor-pointer">
+            <CardContent className="flex items-center gap-4 py-4">
+              <div className="rounded-full bg-emerald-100 p-3">
+                <ShoppingCart className="h-6 w-6 text-emerald-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-emerald-900">Einkaufsliste</p>
+                <p className="text-sm text-muted-foreground">
+                  {shoppingCount === 0
+                    ? shoppingItems.length === 0
+                      ? "Immer verfügbar · Sortiert wie im Supermarkt"
+                      : "Alles erledigt!"
+                    : `${shoppingCount} ${shoppingCount === 1 ? "Artikel" : "Artikel"} offen`}
+                </p>
+              </div>
+              <Button variant="outline" size="sm" className="border-emerald-200">
+                Öffnen
+              </Button>
+            </CardContent>
+          </Card>
+        </Link>
+
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl flex items-center gap-2">
