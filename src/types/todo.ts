@@ -1,5 +1,11 @@
 export type Priority = "low" | "medium" | "high" | "urgent"
 
+export interface TodoListMeta {
+  id: string
+  name: string
+  createdAt: Date
+}
+
 export interface Todo {
   id: string
   text: string
