@@ -2,7 +2,7 @@
 
 ## Overview
 
-Enhanced the existing `.gitignore` file for the React + Vite + TypeScript project. The project already had a comprehensive gitignore; additional patterns were added for Vitest cache, deployment platforms, and sensitive files.
+Enhanced the existing `.gitignore` file for the React + Vite + TypeScript project. The project already had a comprehensive gitignore; additional patterns were added for Turborepo, pnpm, and other common tooling caches.
 
 ## Changes Made
 
@@ -10,9 +10,7 @@ Enhanced the existing `.gitignore` file for the React + Vite + TypeScript projec
 
 | Category | Patterns Added |
 |----------|----------------|
-| **Vitest cache** | `.vitest/` |
-| **Deployment** | `.vercel/`, `.netlify/` |
-| **Misc** | `*.pem` (SSL certificates, private keys) |
+| **Cache** | `.turbo/` (Turborepo), `.pnpm-store/` (pnpm) |
 
 ## Existing Patterns (Unchanged)
 
@@ -29,16 +27,18 @@ The following categories were already present and remain in place:
 | **OS files** | `.DS_Store`, `Thumbs.db` |
 | **TypeScript** | `*.tsbuildinfo` |
 | **Test coverage** | `coverage/` |
-| **Cache** | `.cache/`, `.parcel-cache/`, `.eslintcache` |
+| **Cache** | `.cache/`, `.parcel-cache/`, `.eslintcache`, `.vitest/` |
+| **Deployment** | `.vercel/`, `.netlify/` |
+| **Misc** | `*.pem` |
 
 ## Files Modified
 
 | File | Description |
 |------|-------------|
-| `.gitignore` | Added Vitest cache, deployment platform dirs, and PEM file exclusions |
+| `.gitignore` | Added Turborepo and pnpm cache exclusions |
 
 ## Notes
 
 - `.env.example` is explicitly allowed via `!.env.example` for template env files
 - `.vscode/extensions.json` is allowed for recommended extensions
-- New patterns align with Vitest, Vercel, Netlify, and common security practices for PEM files
+- New patterns support monorepo (Turborepo) and pnpm users

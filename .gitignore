@@ -45,6 +45,8 @@ coverage/
 .parcel-cache/
 .eslintcache
 .vitest/
+.turbo/
+.pnpm-store/
 
 # Deployment
 .vercel/
