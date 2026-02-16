@@ -44,3 +44,11 @@ coverage/
 .cache/
 .parcel-cache/
 .eslintcache
+.vitest/
+
+# Deployment
+.vercel/
+.netlify/
+
+# Misc
+*.pem
