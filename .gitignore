@@ -52,5 +52,13 @@ coverage/
 .vercel/
 .netlify/
 
+# Playwright
+playwright-report/
+test-results/
+playwright/.cache/
+
+# Storybook
+storybook-static/
+
 # Misc
 *.pem
